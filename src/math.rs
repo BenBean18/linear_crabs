@@ -52,3 +52,25 @@ pub(crate) fn print_mat(mat: Vec<Vec<f64>>) {
         println!();
     }
 }
+
+// a transpose function would make this easier
+
+pub(crate) fn find_elimination_matrix(mat: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    // - Choose the first nonzero number in the first column as a pivot
+    // - Use the pivot to zero out that column in the rows below it (these coefficients are what is stored in the elim. matrix)
+    // - Continue column by column until you're upper triangular 
+
+    let mut column: usize = 0; // buddy, if you've got more than 4294967296 columns, we have a problem
+    let mut pivot: f64 = 0.;
+    for row in mat {
+        if row[column] != 0. {
+            if pivot == 0. {
+                pivot = row[column];
+            } else {
+                // -row[column]/pivot is what we need here
+            }
+        }
+    }
+
+    vec![]
+}
