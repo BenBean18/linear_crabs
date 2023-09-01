@@ -53,24 +53,70 @@ pub(crate) fn print_mat(mat: Vec<Vec<f64>>) {
     }
 }
 
+
+pub(crate) fn identity(n: usize) -> Vec<Vec<f64>> {
+    let mut output: Vec<Vec<f64>> = vec![vec![0.; n]; n];
+
+    for row in 0..n {
+        for column in 0..n {
+            if column == row {
+                output[row][column] = 1.;
+            }
+        }
+    }
+    output
+}
+
+pub(crate) fn empty(n: usize) -> Vec<Vec<f64>> {
+    vec![vec![0.; n]; n]
+}
+
 // a transpose function would make this easier
 
-pub(crate) fn find_elimination_matrix(mat: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+pub(crate) fn elimination_matrix(mut mat: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     // - Choose the first nonzero number in the first column as a pivot
     // - Use the pivot to zero out that column in the rows below it (these coefficients are what is stored in the elim. matrix)
     // - Continue column by column until you're upper triangular 
 
-    let mut column: usize = 0; // buddy, if you've got more than 4294967296 columns, we have a problem
+    // let mut column: usize = 0; // buddy, if you've got more than 4294967296 columns, we have a problem
     let mut pivot: f64 = 0.;
-    for row in mat {
-        if row[column] != 0. {
-            if pivot == 0. {
-                pivot = row[column];
-            } else {
-                // -row[column]/pivot is what we need here
+
+    let mut output: Vec<Vec<f64>> = identity(mat.len());
+
+    for column in 0..mat[0].len() {
+        let mut multiplier: Vec<Vec<f64>> = identity(mat.len());
+        for row in column..mat.len() {
+            if mat[row][column] != 0. {
+                if pivot == 0. {
+                    pivot = mat[row][column];
+                    println!("Selecting pivot {pivot} at {row},{column}");
+                    // Needs to be a special case if the desired pivot is zero!
+                } else {
+                    output[row][column] += -mat[row][column]/pivot;
+                    println!("r{} = r{} + {}r{}", row+1, row+1, output[row][column], column+1);
+                    // -row[column]/pivot is what we need here
+                }
             }
+            multiplier[row][column] = output[row][column];
         }
+
+        mat = matmul(multiplier.clone(), mat);
+
+        pivot = 0.;
     }
 
-    vec![]
+    output
+}
+
+pub(crate) fn do_elimination(mut elim_mat: Vec<Vec<f64>>, mut mat: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    for column in 0..mat[0].len() {
+        let mut multiplier: Vec<Vec<f64>> = identity(mat.len());
+        for row in column..mat.len() {
+            multiplier[row][column] = elim_mat[row][column];
+        }
+
+        mat = matmul(multiplier.clone(), mat);
+    }
+
+    mat
 }
