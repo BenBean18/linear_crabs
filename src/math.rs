@@ -156,40 +156,65 @@ pub(crate) fn gauss_jordan(mut mat: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, &'st
     let mut elim_mat: Vec<Vec<f64>> = identity(mat.len());
 
     let mut pivot = 0.;
+    let mut j: i64 = 0;
 
-    for j in 0..mat.len() {
+    while j < mat.len() as i64 {
         // for each column, j
-        while mat[j][j] == 0. {
-            // row exchange
-            // TODO go beyond just i+1
-            let mut this_elim_mat = identity(mat.len());
-            this_elim_mat[j] = vec![0.; mat.len()];
-            this_elim_mat[j][j+1] = 1.;
-            this_elim_mat[j+1] = vec![0.; mat.len()];
-            this_elim_mat[j+1][j] = 1.;
-            elim_mat = matmul(this_elim_mat.clone(), elim_mat);
-            mat = matmul(this_elim_mat.clone(), mat);
-            println!("Row exchange, new matrix:");
-            print_mat(mat.clone());
-        }
-        pivot = mat[j][j];
-        println!("Picked pivot {j}, {j} = {pivot}");
-        for i in 0..mat.len() {
-            // for each row, i
-            if i != j {
+        let mut new_j = j;
+        let mut range: Vec<i64> = (0..mat.len() as i64 - j).collect::<Vec<_>>();
+        range.extend((-j..0).collect::<Vec<_>>());
+        for current_row in range {
+            if mat[j as usize][j as usize] == 0. {
+                // row exchange
+                // Need to handle re-elimination when you have to go above to find a pivot
                 let mut this_elim_mat = identity(mat.len());
-                this_elim_mat[i][j] = -mat[i][j]/pivot;
-                println!("r{} = {}r{} + r{}", i+1, -mat[i][j]/pivot, j+1, i+1);
+                this_elim_mat[j as usize] = vec![0.; mat.len()];
+                this_elim_mat[j as usize][(j+current_row) as usize] = 1.;
+                this_elim_mat[(j+current_row) as usize] = vec![0.; mat.len()];
+                this_elim_mat[(j+current_row) as usize][j as usize] = 1.;
                 elim_mat = matmul(this_elim_mat.clone(), elim_mat);
                 mat = matmul(this_elim_mat.clone(), mat);
+                println!("Row exchange, new matrix:");
+                print_mat(mat.clone());
+                if current_row < 0 {
+                    new_j = j + current_row;
+                    println!("Backward row exchange :(");
+                }
             } else {
+                break;
+            }
+        }
+        pivot = mat[j as usize][j as usize];
+        println!("Picked pivot {j}, {j} = {pivot}");
+        if j != new_j {
+            j = new_j;
+            continue;
+        }
+        for i in 0..mat.len() {
+            // for each row, i
+            if i != j as usize {
+                let mut this_elim_mat = identity(mat.len());
+                this_elim_mat[i][j as usize] = -mat[i][j as usize]/pivot;
+                this_elim_mat[i][i] = 1.;
+                println!("r{} = {}r{} + r{}", i+1, -mat[i][j as usize]/pivot, j+1, i+1);
+                elim_mat = matmul(this_elim_mat.clone(), elim_mat);
+                mat = matmul(this_elim_mat.clone(), mat);
+            }
+        }
+
+        // Make identity matrix
+        for i in 0..mat.len() {
+            // for each row, i
+            if i == j as usize {
                 let mut this_elim_mat = identity(mat.len());
                 this_elim_mat[i][i] = 1./mat[i][i];
                 elim_mat = matmul(this_elim_mat.clone(), elim_mat);
                 mat = matmul(this_elim_mat.clone(), mat);
             }
         }
+
         print_mat(mat.clone());
+        j += 1;
     }
 
     return Ok(elim_mat)
