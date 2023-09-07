@@ -85,12 +85,10 @@ pub(crate) fn gauss_jordan(mut mat: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, &'st
         return Err("# rows > # columns, this is nonsquare and nonaugmented")
     }
 
-    let mut elim_mat: Vec<Vec<f64>> = identity(mat.len()); // O(n^2)
-
     let mut pivot = 0.;
     let mut j: i64 = 0;
 
-    while j < mat.len() as i64 { // O(n)
+    while j < mat.len() as i64 { // O(n) best case, O(sum i from n = 1 to n of i-1) worst case
         // for each column, j
 
         // set the next column to be the current one (this might be changed later)
@@ -111,6 +109,14 @@ pub(crate) fn gauss_jordan(mut mat: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, &'st
                 // Need to handle re-elimination when you have to go above to find a pivot
 
                 // This is O(n) because you are switching two rows
+                let mut this_elim_mat = identity(mat.len()); // O(n^2)
+                this_elim_mat[j as usize] = vec![0.; mat.len()];
+                this_elim_mat[j as usize][(j+current_row) as usize] = 1.;
+                this_elim_mat[(j+current_row) as usize] = vec![0.; mat.len()];
+                this_elim_mat[(j+current_row) as usize][j as usize] = 1.;
+                println!("P{}{}", j, (j+current_row));
+                print_mat(this_elim_mat);
+                println!();
                 let old_next_row = &mat.clone()[(j + current_row) as usize];
                 mat[(j + current_row) as usize] = mat[j as usize].clone();
                 mat[j as usize] = old_next_row.clone();
@@ -157,6 +163,13 @@ pub(crate) fn gauss_jordan(mut mat: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, &'st
                 // then be zero.
                 let multiple = -mat[i][j as usize]/pivot;
 
+                println!("E{}{} = ", i+1, j+1);
+                let mut this_elim_mat = identity(mat.len()); // O(n^2)
+                this_elim_mat[i][j as usize] = multiple;
+                this_elim_mat[i][i] = 1.;
+                print_mat(this_elim_mat);
+                println!();
+
                 // O(n) since you have to do something for each element
                 for col in 0..mat[0].len() {
 
@@ -199,6 +212,13 @@ pub(crate) fn gauss_jordan(mut mat: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, &'st
             if i == j as usize {
                 let multiple = 1./mat[i][i]; // Store what we have to multiply by to make the row a row of the identity matrix
 
+                let mut this_elim_mat = identity(mat.len()); // O(n^2)
+                this_elim_mat[i][i] = multiple;
+
+                println!("D = ");
+                print_mat(this_elim_mat);
+                println!();
+
                 // O(n) since you have to do something for each element
                 for col in 0..mat[0].len() { // O(n)
                     // Multiply each element in the row by the above multiplier
@@ -227,4 +247,30 @@ pub(crate) fn random(n: usize) -> Vec<Vec<f64>> {
         mat[i].push((rng.gen::<i8>() as f64));
     }
     mat
+}
+
+pub(crate) fn augment(mut a: Vec<Vec<f64>>, b: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    assert!(a.len() == b.len());
+    for row in 0..a.len() {
+        for col in 0..b[0].len() {
+            a[row].push(b[row][col]);
+        }
+    }
+    a
+}
+
+pub(crate) fn unaugment(mut a: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    assert!(a.len() < a[0].len());
+    let mut added: Vec<Vec<f64>> = vec![vec![]; a.len()];
+    for row in 0..a.len() {
+        for col in a.len()..a[0].len() {
+            added[row].push(a[row][col]);
+        }
+    }
+    added
+}
+
+pub(crate) fn inverse(a: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    assert!(a.len() == a[0].len());
+    unaugment(gauss_jordan(augment(a.clone(), identity(a.len()))).unwrap()) // yeah functional programming!!
 }
