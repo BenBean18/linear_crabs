@@ -4,16 +4,16 @@ fn main() {
     // let mat = math::matmul(vec![vec![1., 0.], vec![-2., 1.]], vec![vec![1., 3.], vec![2., 4.]]);
     // math::print_mat(mat);
     // println!();
-    // let mat_to_elim = vec![vec![1., 1., 1., 10.], vec![1., 0., 1., 20.], vec![1., 1., 1., 30.]];
+    // let mat_to_elim = vec![vec![1., 2., 1., 10.], vec![1., 0., 1., 20.], vec![0., 1., 1., 30.]];
     // match math::gauss_jordan(mat_to_elim) {
     //     Ok(matrix) => math::print_mat(matrix),
     //     Err(s) => println!("{s}")
     // };
 
     // Analyze time complexity!
-    // Results here: https://docs.google.com/spreadsheets/d/1CM8Jm6n9gNG3USm1nQ7uSp-EzdMskY_v8iUA_9z4BJI/edit?usp=sharing
+    // Results here: https://docs.google.com/spreadsheets/d/1CM8Jm6n9gNG3USm1nQ7uSp-EzdMskY_v8iUA_9z4BJI/edit?usp=sharing, see v2
 
-    for i in 2..100 {
+    for i in 300..350 {
         use std::time::Instant;
         let mat = math::random(i);
         let now = Instant::now();

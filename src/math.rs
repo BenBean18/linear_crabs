@@ -80,8 +80,7 @@ pub(crate) fn empty(n: usize) -> Vec<Vec<f64>> {
 // - For each value, create an elimination matrix and multiply it by the initial elimination matrix
 
 pub(crate) fn gauss_jordan(mut mat: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, &'static str> {
-    // I think the time complexity of this is O(n^5)
-    // Which is BAD
+    // I think the time complexity of this is now O(n^3) which would be a LOT better
     if mat.len() > mat[0].len() {
         return Err("# rows > # columns, this is nonsquare and nonaugmented")
     }
@@ -103,13 +102,19 @@ pub(crate) fn gauss_jordan(mut mat: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, &'st
             if mat[j as usize][j as usize] == 0. {
                 // row exchange
                 // Need to handle re-elimination when you have to go above to find a pivot
-                let mut this_elim_mat = identity(mat.len()); // O(n^2)
-                this_elim_mat[j as usize] = vec![0.; mat.len()];
-                this_elim_mat[j as usize][(j+current_row) as usize] = 1.;
-                this_elim_mat[(j+current_row) as usize] = vec![0.; mat.len()];
-                this_elim_mat[(j+current_row) as usize][j as usize] = 1.;
-                elim_mat = matmul(this_elim_mat.clone(), elim_mat); // O(n^3)
-                mat = matmul(this_elim_mat.clone(), mat); // O(n^3)
+                // let mut this_elim_mat = identity(mat.len()); // O(n^2)
+                // this_elim_mat[j as usize] = vec![0.; mat.len()];
+                // this_elim_mat[j as usize][(j+current_row) as usize] = 1.;
+                // this_elim_mat[(j+current_row) as usize] = vec![0.; mat.len()];
+                // this_elim_mat[(j+current_row) as usize][j as usize] = 1.;
+                // elim_mat = matmul(this_elim_mat.clone(), elim_mat); // O(n^3)
+                // mat = matmul(this_elim_mat.clone(), mat); // O(n^3)
+
+                // This is O(n) because you are switching two rows
+                let old_next_row = &mat.clone()[(j + current_row) as usize];
+                mat[(j + current_row) as usize] = mat[j as usize].clone();
+                mat[j as usize] = old_next_row.clone();
+
                 // println!("Row exchange, new matrix:");
                 // print_mat(mat.clone());
                 if current_row < 0 {
@@ -134,12 +139,22 @@ pub(crate) fn gauss_jordan(mut mat: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, &'st
         for i in 0..mat.len() { // O(n)
             // for each row, i
             if i != j as usize {
-                let mut this_elim_mat = identity(mat.len()); // O(n^2)
-                this_elim_mat[i][j as usize] = -mat[i][j as usize]/pivot;
-                this_elim_mat[i][i] = 1.;
+                // let mut this_elim_mat = identity(mat.len()); // O(n^2)
+                // this_elim_mat[i][j as usize] = -mat[i][j as usize]/pivot;
+                // this_elim_mat[i][i] = 1.;
                 // println!("r{} = {}r{} + r{}", i+1, -mat[i][j as usize]/pivot, j+1, i+1);
-                elim_mat = matmul(this_elim_mat.clone(), elim_mat); // O(n^3)
-                mat = matmul(this_elim_mat.clone(), mat); // O(n^3)
+                // elim_mat = matmul(this_elim_mat.clone(), elim_mat); // O(n^3)
+                // mat = matmul(this_elim_mat.clone(), mat); // O(n^3)
+
+                let multiple = -mat[i][j as usize]/pivot;
+                // Should be O(n) since you have to do something for each element
+                for col in 0..mat[0].len() { // O(n)
+                    // println!("col {col} before = {} -> += {} * {}", mat[i][col], mat[j as usize][col], multiple);
+                    mat[i][col] += mat[j as usize][col] * multiple;
+                    // println!("col {col} after = {}", mat[i][col]);
+                }
+
+                // print_mat(mat.clone());
             }
         }
 
@@ -147,10 +162,17 @@ pub(crate) fn gauss_jordan(mut mat: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, &'st
         for i in 0..mat.len() { // O(n)
             // for each row, i
             if i == j as usize {
-                let mut this_elim_mat = identity(mat.len()); // O(n^2)
-                this_elim_mat[i][i] = 1./mat[i][i];
-                elim_mat = matmul(this_elim_mat.clone(), elim_mat); // O(n^3)
-                mat = matmul(this_elim_mat.clone(), mat); // O(n^3)
+                // let mut this_elim_mat = identity(mat.len()); // O(n^2)!!
+                // this_elim_mat[i][i] = 1./mat[i][i];
+                // I didn't comment out identity matrix creation before so it was stuck at O(n^4)
+
+                let multiple = 1./mat[i][i];
+                // Should be O(n) since you have to do something for each element
+                for col in 0..mat[0].len() { // O(n)
+                    mat[i][col] *= multiple;
+                }
+                // elim_mat = matmul(this_elim_mat.clone(), elim_mat); // O(n^3)
+                // mat = matmul(this_elim_mat.clone(), mat); // O(n^3)
             }
         }
 
@@ -158,7 +180,7 @@ pub(crate) fn gauss_jordan(mut mat: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, &'st
         j += 1;
     }
 
-    return Ok(elim_mat)
+    return Ok(mat)
 }
 
 pub(crate) fn random(n: usize) -> Vec<Vec<f64>> {
