@@ -1,4 +1,6 @@
-pub(crate) fn matmul(a: Vec<Vec<f64>>, b: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+use rand::Rng;
+
+pub(crate) fn matmul(a: Vec<Vec<f64>>, b: Vec<Vec<f64>>) -> Vec<Vec<f64>> { // O(n^3)
     // Find the dimensions of a and b (rows x columns)
     let a_dims = [a.len(), a[0].len()];
     let b_dims = [b.len(), b[0].len()];
@@ -23,13 +25,13 @@ pub(crate) fn matmul(a: Vec<Vec<f64>>, b: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     // - 1 * first row of B + 0 * second row of B = 1 * [1 2] + 0 * [3 4]
 
     // For each row in A, e.g. [1 0]
-    for a_row in a {
+    for a_row in a { // O(n)
         // Create a vector to store the current row in the output matrix
         let mut this_row: Vec<f64> = vec![0.; b[0].len()];
         // For each index in the row (represents scalar to multiply by corresponding row of B), index 0 = 1 in this case
-        for i in 0..a_row.len() {
+        for i in 0..a_row.len() { // O(n)
             // For each element in B's (i)th row (which is B[0] = [1 2])
-            for j in 0..b[i].len() {
+            for j in 0..b[i].len() { // O(n)
                 // Multiply it (in this example, the number 1) by the (i)th element in the current row of A
                 // Add it to the current total in the (j)th spot of the row
                 this_row[j] += &b[i][j] * a_row[i];
@@ -71,77 +73,6 @@ pub(crate) fn empty(n: usize) -> Vec<Vec<f64>> {
 
 // a transpose function would make this easier
 
-// pub(crate) fn elimination_matrix(mut mat: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
-//     // - Choose the first nonzero number in the first column as a pivot
-//     // - Use the pivot to zero out that column in the rows below it (these coefficients are what is stored in the elim. matrix)
-//     // - Continue column by column until you're upper triangular 
-
-//     // let mut column: usize = 0; // buddy, if you've got more than 4294967296 columns, we have a problem
-//     let mut pivot: f64 = 0.;
-
-//     let mut output: Vec<Vec<f64>> = identity(mat[0].len(), mat.len());
-
-//     // print_mat(mat.clone());
-
-//     for column in 0..mat[0].len() {
-//         let mut multiplier: Vec<Vec<f64>> = identity(mat[0].len(), mat.len());
-//         let mut pivot_index: [usize; 2] = [0,0];
-//         for row in column..mat.len() {
-//             if pivot == 0. {
-//                 let mut i = 1;
-//                 while mat[row][column] == 0. {
-//                     output[row][column] = 0.;
-//                     output[row][column+i-1] = 0.;
-//                     output[row][column+i] = 1.;
-//                     output[row+i][column+i-1] = 0.;
-//                     output[row+i][column+i] = 0.;
-//                     output[row+i][column] = 1.;
-//                     println!("r{} = {}r{} + {}r{}", row+1, output[row][column], row+1, output[row][column+i], column+i+1);
-//                     println!("r{} = {}r{} + {}r{}", row+i+1, output[row+i][column+i], row+i+1, output[row+i][column], column+1);
-//                     let current_row = mat[row].clone();
-//                     let current_next_row = mat[row+i].clone();
-//                     mat[row+i] = current_row;
-//                     mat[row] = current_next_row;
-//                     i += 1;
-//                 }
-//                 if mat[row][column] != 0. {
-//                     pivot = mat[row][column];
-//                     pivot_index = [row, column];
-//                     println!("Selecting pivot {pivot} at {row},{column}");
-//                     // Needs to be a special case if the desired pivot is zero!
-//                 }
-//             } else {
-//                 output[row][column] += -mat[row][column]/pivot;
-//                 println!("r{} = {}r{} + {}r{}", row+1, output[row][column], row+1, output[row][column+1], column+1);
-//                 // -row[column]/pivot is what we need here
-//             }
-//             multiplier[row][column] = output[row][column];
-//         }
-
-//         mat = matmul(multiplier.clone(), mat);
-
-//         print_mat(mat.clone());
-
-//         pivot = 0.;
-//     }
-
-//     output
-// }
-
-pub(crate) fn do_elimination(mut elim_mat: Vec<Vec<f64>>, mut mat: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
-    for column in 0..mat[0].len() {
-        let mut multiplier: Vec<Vec<f64>> = identity(mat.len());
-        for row in column..mat.len() {
-            multiplier[row][column] = elim_mat[row][column];
-        }
-
-        mat = matmul(multiplier.clone(), mat);
-    }
-
-    mat
-}
-
-
 // Gauss-Jordan elimination
 // For each column (index i):
 // - Swap rows until we have a valid pivot in the i'th column
@@ -149,73 +80,94 @@ pub(crate) fn do_elimination(mut elim_mat: Vec<Vec<f64>>, mut mat: Vec<Vec<f64>>
 // - For each value, create an elimination matrix and multiply it by the initial elimination matrix
 
 pub(crate) fn gauss_jordan(mut mat: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, &'static str> {
+    // I think the time complexity of this is O(n^5)
+    // Which is BAD
     if mat.len() > mat[0].len() {
         return Err("# rows > # columns, this is nonsquare and nonaugmented")
     }
 
-    let mut elim_mat: Vec<Vec<f64>> = identity(mat.len());
+    let mut elim_mat: Vec<Vec<f64>> = identity(mat.len()); // O(n^2)
 
     let mut pivot = 0.;
     let mut j: i64 = 0;
 
-    while j < mat.len() as i64 {
+    while j < mat.len() as i64 { // O(n)
         // for each column, j
         let mut new_j = j;
         let mut range: Vec<i64> = (0..mat.len() as i64 - j).collect::<Vec<_>>();
         range.extend((-j..0).collect::<Vec<_>>());
-        for current_row in range {
+
+        let mut found_working_pivot = false;
+
+        for current_row in range { // O(n)
             if mat[j as usize][j as usize] == 0. {
                 // row exchange
                 // Need to handle re-elimination when you have to go above to find a pivot
-                let mut this_elim_mat = identity(mat.len());
+                let mut this_elim_mat = identity(mat.len()); // O(n^2)
                 this_elim_mat[j as usize] = vec![0.; mat.len()];
                 this_elim_mat[j as usize][(j+current_row) as usize] = 1.;
                 this_elim_mat[(j+current_row) as usize] = vec![0.; mat.len()];
                 this_elim_mat[(j+current_row) as usize][j as usize] = 1.;
-                elim_mat = matmul(this_elim_mat.clone(), elim_mat);
-                mat = matmul(this_elim_mat.clone(), mat);
-                println!("Row exchange, new matrix:");
-                print_mat(mat.clone());
+                elim_mat = matmul(this_elim_mat.clone(), elim_mat); // O(n^3)
+                mat = matmul(this_elim_mat.clone(), mat); // O(n^3)
+                // println!("Row exchange, new matrix:");
+                // print_mat(mat.clone());
                 if current_row < 0 {
                     new_j = j + current_row;
-                    println!("Backward row exchange :(");
+                    // println!("Backward row exchange :(");
                 }
             } else {
+                found_working_pivot = true;
                 break;
             }
         }
+        if !found_working_pivot {
+            println!("Matrix is singular");
+            return Err("Matrix is singular")
+        }
         pivot = mat[j as usize][j as usize];
-        println!("Picked pivot {j}, {j} = {pivot}");
+        // println!("Picked pivot {j}, {j} = {pivot}");
         if j != new_j {
             j = new_j;
             continue;
         }
-        for i in 0..mat.len() {
+        for i in 0..mat.len() { // O(n)
             // for each row, i
             if i != j as usize {
-                let mut this_elim_mat = identity(mat.len());
+                let mut this_elim_mat = identity(mat.len()); // O(n^2)
                 this_elim_mat[i][j as usize] = -mat[i][j as usize]/pivot;
                 this_elim_mat[i][i] = 1.;
-                println!("r{} = {}r{} + r{}", i+1, -mat[i][j as usize]/pivot, j+1, i+1);
-                elim_mat = matmul(this_elim_mat.clone(), elim_mat);
-                mat = matmul(this_elim_mat.clone(), mat);
+                // println!("r{} = {}r{} + r{}", i+1, -mat[i][j as usize]/pivot, j+1, i+1);
+                elim_mat = matmul(this_elim_mat.clone(), elim_mat); // O(n^3)
+                mat = matmul(this_elim_mat.clone(), mat); // O(n^3)
             }
         }
 
         // Make identity matrix
-        for i in 0..mat.len() {
+        for i in 0..mat.len() { // O(n)
             // for each row, i
             if i == j as usize {
-                let mut this_elim_mat = identity(mat.len());
+                let mut this_elim_mat = identity(mat.len()); // O(n^2)
                 this_elim_mat[i][i] = 1./mat[i][i];
-                elim_mat = matmul(this_elim_mat.clone(), elim_mat);
-                mat = matmul(this_elim_mat.clone(), mat);
+                elim_mat = matmul(this_elim_mat.clone(), elim_mat); // O(n^3)
+                mat = matmul(this_elim_mat.clone(), mat); // O(n^3)
             }
         }
 
-        print_mat(mat.clone());
+        // print_mat(mat.clone());
         j += 1;
     }
 
     return Ok(elim_mat)
+}
+
+pub(crate) fn random(n: usize) -> Vec<Vec<f64>> {
+    let mut mat: Vec<Vec<f64>> = empty(n);
+    let mut rng = rand::thread_rng();
+    for i in 0..n {
+        for j in 0..n {
+            mat[i][j] = (rng.gen::<i8>() as f64);
+        }
+    }
+    mat
 }
